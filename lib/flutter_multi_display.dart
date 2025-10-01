@@ -1,4 +1,4 @@
-library flutter_multi_display;
+library;
 
 export 'shared_state_manager.dart'; // Export shared state APIs
 
