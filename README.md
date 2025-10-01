@@ -1,15 +1,16 @@
 # flutter_multi_display
 
-A new Flutter plugin project.
+A Flutter plugin for handling multiple displays on Android (e.g., RK3588 boards) with shared state management across Flutter engines.
 
-## Getting Started
+## Features
+- Launch separate Flutter engines on multiple displays.
+- Shared state synchronization using a type-safe mechanism.
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/to/develop-plugins),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+## Usage
+Add to pubspec.yaml:
+flutter_multi_display: ^0.1.0
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+See example/ for demo.
 
+## Installation
+flutter pub add flutter_multi_display

@@ -8,7 +8,8 @@ abstract class FlutterMultiDisplayPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static FlutterMultiDisplayPlatform _instance = MethodChannelFlutterMultiDisplay();
+  static FlutterMultiDisplayPlatform _instance =
+      MethodChannelFlutterMultiDisplay();
 
   /// The default instance of [FlutterMultiDisplayPlatform] to use.
   ///
@@ -24,6 +25,27 @@ abstract class FlutterMultiDisplayPlatform extends PlatformInterface {
   }
 
   Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
+    throw UnimplementedError('getPlatformVersion() has not been implemented.');
+  }
+
+  // Add our shared state methods
+  Future<void> updateState(String type, Map<String, dynamic>? state) {
+    throw UnimplementedError('updateState() has not been implemented.');
+  }
+
+  Future<Map<String, dynamic>?> getState(String type) {
+    throw UnimplementedError('getState() has not been implemented.');
+  }
+
+  Future<Map<String, dynamic>> getAllState() {
+    throw UnimplementedError('getAllState() has not been implemented.');
+  }
+
+  Future<void> clearState(String type) {
+    throw UnimplementedError('clearState() has not been implemented.');
+  }
+
+  Future<void> setupMultiDisplay(List<String> entrypoints) {
+    throw UnimplementedError('setupMultiDisplay() has not been implemented.');
   }
 }

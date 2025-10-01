@@ -64,7 +64,7 @@ class ScreenApp extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -254,7 +254,7 @@ class LoginViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LoginCubit()..syncState(), // Add syncState call,
+      create: (context) => LoginCubit(),
       child: BlocBuilder<LoginCubit, LoginState>(
         builder: (context, state) {
           debugPrint(
@@ -265,28 +265,16 @@ class LoginViewer extends StatelessWidget {
               ? _buildWelcomeScreen(state.username)
               : _buildLoginPrompt();
 
-          return Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: state.isLoggedIn
-                        ? Colors.greenAccent
-                        : Colors.orangeAccent,
-                    width: 5,
-                  ),
-                ),
-                child: content,
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: state.isLoggedIn
+                    ? Colors.greenAccent
+                    : Colors.orangeAccent,
+                width: 5,
               ),
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: ElevatedButton(
-                  onPressed: () => context.read<LoginCubit>().syncState(),
-                  child: const Text("Sync State"),
-                ),
-              ),
-            ],
+            ),
+            child: content,
           );
         },
       ),
@@ -297,7 +285,7 @@ class LoginViewer extends StatelessWidget {
   Widget _buildWelcomeScreen(String username) {
     debugPrint('[Display 3] Building WELCOME screen for username=$username');
     return Container(
-      color: Colors.green.withOpacity(0.3),
+      color: Colors.green.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -373,7 +361,7 @@ class LoginViewer extends StatelessWidget {
   Widget _buildLoginPrompt() {
     debugPrint('[Display 3] Building LOGIN PROMPT screen');
     return Container(
-      color: Colors.orange.withOpacity(0.3),
+      color: Colors.orange.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
