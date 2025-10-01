@@ -1,27 +1,53 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:flutter_multi_display_example/login_cubit.dart';
+import 'package:flutter_multi_display_example/login_state.dart';
 import 'package:flutter_multi_display_example/main.dart';
 
 void main() {
-  testWidgets('Verify Platform version', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) => widget is Text &&
-                           widget.data!.startsWith('Running on:'),
+  testWidgets('LoginScreen displays login UI when not logged in', (WidgetTester tester) async {
+    // Build ScreenApp with screenId=1 (LoginScreen)
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider(
+          create: (context) => LoginCubit(),
+          child: const ScreenApp(
+            title: "Main Screen",
+            color: Colors.blue,
+            screenId: 1,
+          ),
+        ),
       ),
-      findsOneWidget,
     );
+
+    // Verify login UI elements
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(2)); // Username and Password
+    expect(find.text('Logging in...'), findsNothing);
+  });
+
+  testWidgets('LoginScreen displays home UI when logged in', (WidgetTester tester) async {
+    // Create a logged-in state
+    final cubit = LoginCubit();
+    cubit.emit(const LoginState(isLoggedIn: true, username: 'testuser'));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider(
+          create: (context) => cubit,
+          child: const ScreenApp(
+            title: "Main Screen",
+            color: Colors.blue,
+            screenId: 1,
+          ),
+        ),
+      ),
+    );
+
+    // Verify home UI elements
+    expect(find.text('Home Page\nWelcome, testuser!'), findsOneWidget);
+    expect(find.text('Logout'), findsOneWidget);
+    expect(find.text('Login'), findsNothing);
   });
 }
