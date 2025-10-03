@@ -45,7 +45,10 @@ abstract class FlutterMultiDisplayPlatform extends PlatformInterface {
     throw UnimplementedError('clearState() has not been implemented.');
   }
 
-  Future<void> setupMultiDisplay(List<String> entrypoints) {
+  Future<void> setupMultiDisplay(
+    List<String> entrypoints, {
+    bool portBased = false,
+  }) {
     throw UnimplementedError('setupMultiDisplay() has not been implemented.');
   }
 }

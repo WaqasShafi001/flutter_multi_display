@@ -8,7 +8,10 @@ import 'login_state.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('=== Main Display Starting ===');
-  await FlutterMultiDisplay().setupMultiDisplay(['screen1Main', 'screen2Main']);
+  await FlutterMultiDisplay().setupMultiDisplay([
+    'screen1Main',
+    'screen2Main',
+  ], portBased: true);
   runApp(
     const ScreenApp(title: "Main Screen", color: Colors.blue, screenId: 1),
   );

@@ -81,8 +81,9 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
                 }
                 "setupMultiDisplay" -> {
                     val entrypoints = call.argument<List<String>>("entrypoints")
+                    val portBased = call.argument<Boolean>("portBased") ?: false
                     if (entrypoints != null) {
-                        setupMultiDisplay(entrypoints)
+                        setupMultiDisplay(entrypoints, portBased)
                         result.success(null)
                     } else {
                         result.error("INVALID_ENTRYPOINTS", "Entrypoints cannot be null", null)
@@ -96,10 +97,14 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
         }
     }
 
-    private fun setupMultiDisplay(entrypoints: List<String>) {
+    private fun setupMultiDisplay(entrypoints: List<String>, portBased: Boolean) {
         val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-        val displays = displayManager.displays
+        var displays = displayManager.displays.toList()
         Log.d("MultiDisplay", "Detected ${displays.size} displays")
+
+        if (portBased) {
+            displays = sortDisplaysByPort(displays)
+        }
 
         var index = 0
         for (display in displays) {
@@ -108,6 +113,33 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
                 index++
             }
         }
+    }
+
+    private fun sortDisplaysByPort(displays: List<Display>): List<Display> {
+        val sortedDisplays = mutableListOf<Display>()
+
+        // Log all display names for debugging
+        for (display in displays) {
+            Log.d("MultiDisplay", "Display ID: ${display.displayId}, Name: ${display.name}")
+        }
+
+        // Primary display (usually built-in or first HDMI) is always first
+        val primary = displays.find { it.displayId == Display.DEFAULT_DISPLAY }
+        if (primary != null) {
+            sortedDisplays.add(primary)
+        }
+
+        // Assign VGA for Ads (screenId: 2)
+        val vgaDisplay = displays.find { it.name.contains("VGA", ignoreCase = true) }
+        if (vgaDisplay != null) {
+            sortedDisplays.add(vgaDisplay)
+        }
+
+        // Assign remaining HDMI for Viewer (screenId: 3)
+        val remainingDisplays = displays.filter { it.displayId != Display.DEFAULT_DISPLAY && it != vgaDisplay }
+        sortedDisplays.addAll(remainingDisplays)
+
+        return sortedDisplays
     }
 
     private fun showFlutterOnDisplay(display: Display, entrypoint: String) {

@@ -53,9 +53,13 @@ class MethodChannelFlutterMultiDisplay extends FlutterMultiDisplayPlatform {
   }
 
   @override
-  Future<void> setupMultiDisplay(List<String> entrypoints) async {
+  Future<void> setupMultiDisplay(
+    List<String> entrypoints, {
+    bool portBased = false,
+  }) async {
     await methodChannel.invokeMethod('setupMultiDisplay', {
       'entrypoints': entrypoints,
+      'portBased': portBased,
     });
   }
 }

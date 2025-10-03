@@ -7,10 +7,16 @@ import 'flutter_multi_display_platform_interface.dart';
 /// Facade for interacting with the flutter_multi_display plugin.
 class FlutterMultiDisplay {
   /// Sets up multi-display with the given Dart entrypoints.
-  Future<void> setupMultiDisplay(List<String> entrypoints) {
-    return FlutterMultiDisplayPlatform.instance.setupMultiDisplay(entrypoints);
+  Future<void> setupMultiDisplay(
+    List<String> entrypoints, {
+    bool portBased = false,
+  }) {
+    return FlutterMultiDisplayPlatform.instance.setupMultiDisplay(
+      entrypoints,
+      portBased: portBased,
+    );
   }
-  
+
   /// Updates the shared state for a given type.
   Future<void> updateState(String type, Map<String, dynamic>? state) {
     return FlutterMultiDisplayPlatform.instance.updateState(type, state);
