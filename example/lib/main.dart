@@ -107,8 +107,8 @@ class ScreenContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (screenId == 1) return const LoginScreen();
-    if (screenId == 2) return const AdsScreen();
-    return const LoginViewer();
+    if (screenId == 2) return const LoginViewer();
+    return const AdsScreen();
   }
 }
 

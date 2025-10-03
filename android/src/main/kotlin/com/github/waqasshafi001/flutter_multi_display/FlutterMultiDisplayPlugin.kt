@@ -101,6 +101,16 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
         val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         var displays = displayManager.displays.toList()
         Log.d("MultiDisplay", "Detected ${displays.size} displays")
+        // Log detailed display info
+        for (display in displays) {
+            val displayMode = display.supportedModes.firstOrNull()
+            Log.d(
+                "MultiDisplay",
+                "Display ID: ${display.displayId}, Name: ${display.name}, " +
+                "RefreshRate: ${displayMode?.refreshRate}, " +
+                "Flags: ${display.flags}"
+            )
+        }
 
         if (portBased) {
             displays = sortDisplaysByPort(displays)
@@ -120,7 +130,7 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
 
         // Log all display names for debugging
         for (display in displays) {
-            Log.d("MultiDisplay", "Display ID: ${display.displayId}, Name: ${display.name}")
+            Log.d("MultiDisplay", "Display ID: ${display.displayId}, Name: ${display.name}, Flags: ${display.flags}, SupportedModes: ${display.supportedModes.joinToString { "${it.refreshRate}" }}")
         }
 
         // Primary display (usually built-in or first HDMI) is always first
@@ -138,6 +148,9 @@ class FlutterMultiDisplayPlugin : FlutterPlugin, MethodCallHandler {
         // Assign remaining HDMI for Viewer (screenId: 3)
         val remainingDisplays = displays.filter { it.displayId != Display.DEFAULT_DISPLAY && it != vgaDisplay }
         sortedDisplays.addAll(remainingDisplays)
+        remainingDisplays.forEach {
+            Log.d("MultiDisplay", "Assigned remaining display: ID=${it.displayId}, Name=${it.name}")
+        }
 
         return sortedDisplays
     }
