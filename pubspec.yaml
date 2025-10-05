@@ -3,6 +3,7 @@ description: "A powerful Flutter plugin enabling seamless multi-display support 
 version: 0.0.1
 repository: https://github.com/WaqasShafi001/flutter_multi_display
 homepage: https://github.com/WaqasShafi001/flutter_multi_display
+issue_tracker: https://github.com/WaqasShafi001/flutter_multi_display/issues
 
 environment:
   sdk: ^3.9.0
