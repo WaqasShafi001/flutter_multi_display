@@ -8,3 +8,6 @@
   - Port-based display sorting.
   - State persistence and reactive updates.
 - Example app with login UI, customer display, and ads display.
+
+## 0.0.2
+- Updated LICENSE file with correct MIT license details.
