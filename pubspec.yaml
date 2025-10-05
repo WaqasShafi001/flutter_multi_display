@@ -1,17 +1,20 @@
 name: flutter_multi_display
-description: "A Flutter plugin for multi-display support on Android with shared state management across engines."
+description: "A powerful Flutter plugin enabling seamless multi-display support on Android devices. Features shared state management across Flutter engines, making it perfect for multi-screen applications, presentation displays, and extended displays."
 version: 0.0.1
+repository: https://github.com/WaqasShafi001/flutter_multi_display
 homepage: https://github.com/WaqasShafi001/flutter_multi_display
 
 environment:
   sdk: ^3.9.0
-  flutter: '>=3.3.0'
+  flutter: ">=3.3.0"
 
+# Package dependencies
 dependencies:
   flutter:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
 
+# Development dependencies
 dev_dependencies:
   flutter_test:
     sdk: flutter
