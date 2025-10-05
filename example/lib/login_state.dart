@@ -24,7 +24,7 @@ class LoginState extends Equatable {
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       username: username ?? this.username,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error, // Allow null to clear error
     );
   }
 
@@ -36,7 +36,6 @@ class LoginState extends Equatable {
     return [isLoggedIn, username, isLoading, error];
   }
 
-  // Added for serialization (toJson/fromJson)
   Map<String, dynamic> toJson() {
     return {
       'isLoggedIn': isLoggedIn,

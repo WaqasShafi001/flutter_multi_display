@@ -7,50 +7,37 @@ class LoginCubit extends Cubit<LoginState> {
   final usernameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
 
-  late final LoginSharedState _sharedState;
-  late final VoidCallback _sharedListener;
+  final LoginSharedState _sharedState;
 
-  LoginCubit() : super(const LoginState()) {
-    // Initialize shared state
-    _sharedState = LoginSharedState();
+  LoginCubit() : _sharedState = LoginSharedState(), super(const LoginState()) {
+    // Initialize with shared state if available
+    if (_sharedState.state != null) {
+      emit(_sharedState.state!);
+    }
+    // Listen to shared state changes
+    _sharedState.addListener(_onSharedStateChanged);
+  }
 
-    // Listen to shared state changes and emit if different
-    _sharedListener = () {
-      final sharedValue = _sharedState.value;
-      debugPrint('[LoginCubit] Shared state changed: $sharedValue');
-      if (sharedValue != null && sharedValue != state) {
-        emit(sharedValue);
-      }
-    };
-    _sharedState.addListener(_sharedListener);
-
-    // Force initial sync
-    syncState();
-
-    // Sync initial state immediately
-    _sharedState.initialSync.then((_) {
-      final initialShared = _sharedState.value;
-      debugPrint('[LoginCubit] Initial sync completed: $initialShared');
-      if (initialShared != null && initialShared != state) {
-        emit(initialShared);
-      }
-    });
+  void _onSharedStateChanged() {
+    final sharedState = _sharedState.state;
+    debugPrint('[LoginCubit] Shared state changed: $sharedState');
+    if (sharedState != null && sharedState != state) {
+      emit(sharedState);
+    }
   }
 
   @override
   void emit(LoginState state) {
     debugPrint('[LoginCubit] Emitting state: $state');
-    // Update shared state if different (prevents loops)
-    if (state != _sharedState.value) {
-      _sharedState.setState(state);
-    }
+    // Sync shared state before emitting
+    _sharedState.sync(state);
     super.emit(state);
   }
 
   @override
   Future<void> close() {
     debugPrint('[LoginCubit] Closing cubit');
-    _sharedState.removeListener(_sharedListener);
+    _sharedState.removeListener(_onSharedStateChanged);
     _sharedState.dispose();
     usernameCtrl.dispose();
     passwordCtrl.dispose();
@@ -72,16 +59,12 @@ class LoginCubit extends Cubit<LoginState> {
     emit(state.copyWith(isLoading: true, error: null));
 
     try {
-      // Update state (emit will sync to shared)
+      // Update state (emit will sync)
       debugPrint('[Display 1] Setting isLoggedIn=true');
-      var newState = state.copyWith(isLoggedIn: true, username: username);
-      emit(newState);
-
+      emit(
+        state.copyWith(isLoggedIn: true, username: username, error: null),
+      ); // Clear error on success
       debugPrint('[Display 1] Login successful');
-
-      final allState = await SharedStateManager.instance.methodChannel
-          .invokeMapMethod<String, dynamic>('getAllState');
-      debugPrint('[Display 1] Current state after login: $allState');
     } catch (e) {
       debugPrint('[Display 1] Login error: $e');
       emit(state.copyWith(error: 'Login failed: $e'));
@@ -95,24 +78,13 @@ class LoginCubit extends Cubit<LoginState> {
 
     try {
       // Update state (emit syncs)
-      emit(state.copyWith(isLoggedIn: false, username: ''));
+      emit(state.copyWith(isLoggedIn: false, username: '', error: null));
       debugPrint('[Display 1] Logout successful');
-
       usernameCtrl.clear();
       passwordCtrl.clear();
     } catch (e) {
       debugPrint('[Display 1] Logout error: $e');
       emit(state.copyWith(error: 'Logout failed: $e'));
-    }
-  }
-
-  Future<void> syncState() async {
-    final sharedValue = await _sharedState.initialSync.then(
-      (_) => _sharedState.value,
-    );
-    debugPrint('[LoginCubit] Forcing sync: $sharedValue');
-    if (sharedValue != null && sharedValue != state) {
-      emit(sharedValue);
     }
   }
 }

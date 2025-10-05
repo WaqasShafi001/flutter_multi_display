@@ -4,112 +4,85 @@ import 'package:flutter/services.dart';
 
 typedef OnSharedStateChangeListener = void Function(Map<String, dynamic>?);
 
-const _sharedStateChannelName =
-    'flutter_multi_display/shared_state'; // Updated channel for package
+const _sharedStateChannelName = 'flutter_multi_display/shared_state';
 
 abstract class SharedState<T>
     with ChangeNotifier
     implements ValueListenable<T?> {
   T? _state;
+  final String _type;
 
   T? get state => _state;
 
   @override
   T? get value => _state;
 
-  late final Future initialSync;
-  bool _isSyncComplete = false;
+  SharedState() : _type = T.toString() {
+    // Automatically register listener with SharedStateManager
+    SharedStateManager.instance.addStateChangeListener(_type, _onStateChange);
 
-  SharedState() : super() {
-    SharedStateManager.instance.addStateChangeListener(
-      runtimeType.toString(),
-      _onStateChange,
-    );
-
-    final cachedState = SharedStateManager.instance.getCachedState(
-      runtimeType.toString(),
-    );
+    // Initialize with cached state if available
+    final cachedState = SharedStateManager.instance.getCachedState(_type);
     if (cachedState != null) {
-      _isSyncComplete = true;
       _state = fromJson(cachedState);
-      debugPrint(
-        '[SharedState] Initial cached state for $runtimeType: $_state',
-      );
-      return;
+      debugPrint('[SharedState] Initial cached state for $_type: $_state');
+    } else {
+      // Sync state asynchronously
+      _syncState();
     }
-    initialSync = _syncState();
   }
 
-  void setState(T? state) async {
+  /// Updates the shared state and notifies other engines.
+  void sync(T? state) {
+    if (_state == state) return; // Avoid unnecessary updates
     _state = state;
-    if (!_isSyncComplete) {
-      await initialSync;
-    }
-
-    debugPrint('[SharedState] Setting state for $runtimeType: $state');
-
+    debugPrint('[SharedState] Syncing state for $_type: $state');
     notifyListeners();
-    SharedStateManager.instance.updateState(
-      runtimeType.toString(),
-      toJson(state),
-    );
+    SharedStateManager.instance.updateState(_type, toJson(state));
   }
 
-  void clearState() async {
-    if (!_isSyncComplete) {
-      await initialSync;
-    }
+  /// Clears the shared state and notifies other engines.
+  void clear() {
     _state = null;
-    debugPrint('[SharedState] Clearing state for $runtimeType');
+    debugPrint('[SharedState] Clearing state for $_type');
     notifyListeners();
-    SharedStateManager.instance.clearState(runtimeType.toString());
+    SharedStateManager.instance.clearState(_type);
   }
 
-  Future _syncState() async {
-    final json = await SharedStateManager.instance.getState(
-      runtimeType.toString(),
-    );
-    _isSyncComplete = true;
-
+  Future<void> _syncState() async {
+    final json = await SharedStateManager.instance.getState(_type);
     if (json != null) {
       _onStateChange(json);
     }
-    debugPrint('[SharedState] Sync completed for $runtimeType: $_state');
+    debugPrint('[SharedState] Initial sync completed for $_type: $_state');
   }
 
   void _onStateChange(Map<String, dynamic>? newState) {
-    debugPrint(
-      '[SharedState] Received state change for $runtimeType: $newState',
-    );
-    if (_isSameState(newState)) {
-      return;
-    }
-
+    debugPrint('[SharedState] Received state change for $_type: $newState');
     try {
-      if (newState == null) {
-        _state = null;
-      } else {
-        _state = fromJson(newState);
-      }
-      debugPrint('[SharedState] Updated state for $runtimeType: $_state');
+      final newValue = newState == null ? null : fromJson(newState);
+      if (_isSameState(newValue)) return;
+      _state = newValue;
+      debugPrint('[SharedState] Updated state for $_type: $_state');
       notifyListeners();
     } catch (e) {
       debugPrint(
-        "SharedState failed to parse for $runtimeType from: $newState, $e",
+        '[SharedState] Failed to parse for $_type from: $newState, $e',
       );
     }
   }
 
-  bool _isSameState(Map<String, dynamic>? newState) {
-    // return newState?.toString() == toJson(state)?.toString();
-    return false; // temporary
+  bool _isSameState(T? newState) {
+    if (newState == null && _state == null) return true;
+    if (newState == null || _state == null) return false;
+    return newState == _state;
   }
 
   @override
   void dispose() {
-    debugPrint('[SharedState] Disposing $runtimeType');
+    debugPrint('[SharedState] Disposing $_type');
     SharedStateManager.instance.removeStateChangeListener(
-      runtimeType.toString(),
+      _type,
       _onStateChange,
     );
     super.dispose();
@@ -130,8 +103,6 @@ class SharedStateManager {
 
   final Map<String, Set<OnSharedStateChangeListener>> _listeners = {};
   late final MethodChannel methodChannel;
-
-  late final Future _syncSharedState;
   Map<String, Map<String, dynamic>?> _cachedSharedState = {};
   bool _hasSyncData = false;
 
@@ -141,26 +112,30 @@ class SharedStateManager {
       switch (call.method) {
         case 'onStateChanged':
           if (!_hasSyncData) {
-            await _syncSharedState;
+            await _syncSharedState();
           }
-
           final type = call.arguments['type'] as String;
           final rawData = call.arguments['data'];
           final newState = rawData != null
               ? Map<String, dynamic>.from(rawData)
               : null;
-          _cachedSharedState[type] = newState;
-          _notifyListeners(type, newState);
+          // Only notify if the state has changed
+          if (_cachedSharedState[type] != newState) {
+            _cachedSharedState[type] = newState;
+            debugPrint(
+              '[SharedStateManager] Caching state for $type: $newState',
+            );
+            _notifyListeners(type, newState);
+          }
           break;
         default:
           debugPrint("SharedStateManager: Unknown method ${call.method}");
       }
       return null;
     });
-    _syncSharedState = _initSharedState();
   }
 
-  Future _initSharedState() async {
+  Future _syncSharedState() async {
     final res = await methodChannel.invokeMapMethod<String, dynamic>(
       'getAllState',
     );
@@ -173,11 +148,14 @@ class SharedStateManager {
         ) ??
         {};
     _hasSyncData = true;
+    debugPrint(
+      '[SharedStateManager] Initial sync completed: $_cachedSharedState',
+    );
   }
 
   Future<Map<String, dynamic>?> getState(String type) async {
     if (!_hasSyncData) {
-      await _syncSharedState;
+      await _syncSharedState();
     }
     return _cachedSharedState[type];
   }
@@ -189,16 +167,17 @@ class SharedStateManager {
   Future<void> updateState(String type, Map<String, dynamic>? data) async {
     try {
       if (!_hasSyncData) {
-        await _syncSharedState;
+        await _syncSharedState();
       }
-
-      _cachedSharedState[type] = data;
-      _notifyListeners(type, data);
-
-      await methodChannel.invokeMethod('updateState', {
-        'type': type,
-        'state': data,
-      });
+      if (_cachedSharedState[type] != data) {
+        _cachedSharedState[type] = data;
+        debugPrint('[SharedStateManager] Updating state for $type: $data');
+        _notifyListeners(type, data);
+        await methodChannel.invokeMethod('updateState', {
+          'type': type,
+          'state': data,
+        });
+      }
     } on PlatformException catch (e) {
       debugPrint('Error updating shared state: ${e.message}');
     }
@@ -207,12 +186,14 @@ class SharedStateManager {
   Future<void> clearState(String type) async {
     try {
       if (!_hasSyncData) {
-        await _syncSharedState;
+        await _syncSharedState();
       }
-
-      _cachedSharedState[type] = null;
-      _notifyListeners(type, null);
-      await methodChannel.invokeMethod('clearState', {'type': type});
+      if (_cachedSharedState[type] != null) {
+        _cachedSharedState[type] = null;
+        debugPrint('[SharedStateManager] Clearing state for $type');
+        _notifyListeners(type, null);
+        await methodChannel.invokeMethod('clearState', {'type': type});
+      }
     } on PlatformException catch (e) {
       debugPrint('Error clearing shared state: ${e.message}');
     }
@@ -234,10 +215,11 @@ class SharedStateManager {
     OnSharedStateChangeListener listener,
   ) {
     final stateListeners = _listeners[type];
-    if (stateListeners == null || stateListeners.isEmpty) {
-      return;
-    }
+    if (stateListeners == null || stateListeners.isEmpty) return;
     stateListeners.remove(listener);
+    debugPrint(
+      '[SharedStateManager] Removed listener for type=$type, total=${_listeners[type]!.length}',
+    );
   }
 
   void _notifyListeners(String type, Map<String, dynamic>? data) {
