@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_display_example/data_cubit.dart';
-import 'package:flutter_multi_display_example/shared_states.dart';
+import 'package:flutter_multi_display_example/main_app/state/data_cubit.dart';
+import 'package:flutter_multi_display_example/shared/shared_states.dart';
 
 class ViewerState extends DataState {
   final String currentScreen;

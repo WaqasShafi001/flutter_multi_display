@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_display_example/shared_states.dart';
+import 'package:flutter_multi_display_example/shared/shared_states.dart';
 
 class DataState {
   final String? username;

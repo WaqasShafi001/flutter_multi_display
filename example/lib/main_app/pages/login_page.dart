@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_display_example/data_cubit.dart';
-import 'package:flutter_multi_display_example/home_page.dart';
-import 'package:flutter_multi_display_example/screen_cubit.dart';
+import 'package:flutter_multi_display_example/main_app/state/data_cubit.dart';
+import 'package:flutter_multi_display_example/main_app/pages/home_page.dart';
+import 'package:flutter_multi_display_example/main_app/state/screen_cubit.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

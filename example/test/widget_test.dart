@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_display_example/data_cubit.dart';
-import 'package:flutter_multi_display_example/home_page.dart';
-import 'package:flutter_multi_display_example/login_page.dart';
-import 'package:flutter_multi_display_example/main.dart';
-import 'package:flutter_multi_display_example/screen_cubit.dart';
-import 'package:flutter_multi_display_example/viewer_cubit.dart';
+import 'package:flutter_multi_display_example/ads_app/ads_app.dart';
+import 'package:flutter_multi_display_example/main_app/state/data_cubit.dart';
+import 'package:flutter_multi_display_example/main_app/pages/home_page.dart';
+import 'package:flutter_multi_display_example/main_app/pages/login_page.dart';
+import 'package:flutter_multi_display_example/main_app/state/screen_cubit.dart';
+import 'package:flutter_multi_display_example/secondary_app/secondary_app.dart';
+import 'package:flutter_multi_display_example/secondary_app/state/viewer_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
