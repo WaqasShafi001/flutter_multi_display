@@ -5,27 +5,29 @@ import 'package:flutter_multi_display/flutter_multi_display_method_channel.dart'
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MethodChannelFlutterMultiDisplay platform = MethodChannelFlutterMultiDisplay();
-  const MethodChannel channel = MethodChannel('flutter_multi_display/shared_state');
+  MethodChannelFlutterMultiDisplay platform =
+      MethodChannelFlutterMultiDisplay();
+  const MethodChannel channel = MethodChannel(
+    'flutter_multi_display/shared_state',
+  );
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getPlatformVersion') {
-          return '42';
-        } else if (methodCall.method == 'getAllState') {
-          return {};
-        } else if (methodCall.method == 'getState') {
-          return {};
-        }
-        return null; // For void methods
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          if (methodCall.method == 'getPlatformVersion') {
+            return '42';
+          } else if (methodCall.method == 'getAllState') {
+            return {};
+          } else if (methodCall.method == 'getState') {
+            return {};
+          }
+          return null; // For void methods
+        });
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   test('getPlatformVersion', () async {

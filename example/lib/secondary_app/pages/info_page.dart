@@ -6,9 +6,7 @@ class InfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: Text('Please enter username on main display'),
-      ),
+      body: Center(child: Text('Please enter username on main display')),
     );
   }
 }

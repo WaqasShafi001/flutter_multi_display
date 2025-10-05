@@ -12,8 +12,10 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home'), actions: [
-         IconButton(
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: [
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               context.read<DataCubit>().clearUsername();
@@ -26,7 +28,8 @@ class HomePage extends StatelessWidget {
             },
             tooltip: 'Logout',
           ),
-      ],),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
