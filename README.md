@@ -5,6 +5,13 @@
 
 A powerful Flutter plugin for building multi-display Android applications with seamless state management across multiple screens.
 
+## 🎥 Demo
+
+See the multi-display Flutter setup in action:
+
+![Flutter Multi Display Demo](https://github.com/WaqasShafi001/flutter_multi_display/blob/main/example/assets/demo.gif?raw=true)
+
+
 ## Features
 
 - **Multi-Display Support**: Run Flutter UI on up to 3 physical displays simultaneously (1 primary + 2 secondary displays)
