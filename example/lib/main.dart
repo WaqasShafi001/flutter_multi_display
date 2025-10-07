@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_multi_display/flutter_multi_display.dart';
-import 'package:flutter_multi_display_example/ads_app/ads_app.dart';
-import 'package:flutter_multi_display_example/main_app/main_app.dart';
-import 'package:flutter_multi_display_example/secondary_app/secondary_app.dart';
+import 'apps/main_app.dart';
+import 'apps/ads_app.dart';
+import 'apps/customer_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,13 +14,13 @@ Future<void> main() async {
 }
 
 @pragma('vm:entry-point')
-void screen1Main() {
+Future<void> screen1Main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const AdsApp());
 }
 
 @pragma('vm:entry-point')
-void screen2Main() {
+Future<void> screen2Main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const SecondaryApp());
+  runApp(const CustomerApp());
 }

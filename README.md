@@ -27,9 +27,14 @@ Perfect for building:
 
 ## Platform Support
 
-| Android | iOS | Web | Windows | MacOS | Linux |
-|---------|-----|-----|---------|-------|-------|
-| ✅      | ❌  | ❌  | ❌      | ❌    | ❌    |
+| Platform | Supported |
+|----------|-----------|
+| Android  | ✅        |
+| iOS      | ❌        |
+| Web      | ❌        |
+| Windows  | ❌        |
+| MacOS    | ❌        |
+| Linux    | ❌        |
 
 **Note**: Currently supports Android only. iOS and other platform support may be added in future releases.
 
@@ -39,7 +44,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_multi_display: ^0.0.1
+  flutter_multi_display: ^0.0.3
 ```
 
 Then run:
@@ -117,66 +122,311 @@ class MainActivity : FlutterActivity() {
 
 ### Complete Example
 
-Here's a complete example showing a multi-display app with state synchronization:
+Here's a complete example showing a multi-display Flutter app with synchronized state management using `SharedState` across multiple screens.
 
 **main.dart:**
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_multi_display/flutter_multi_display.dart';
+import 'apps/main_app.dart';
+import 'apps/ads_app.dart';
+import 'apps/customer_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Setup multi-display BEFORE runApp
   await FlutterMultiDisplay().setupMultiDisplay(
     ['screen1Main', 'screen2Main'],
     portBased: true, // Sort displays by port type (VGA, HDMI)
   );
-  
+
   runApp(const MainApp());
 }
 
 // Entrypoint for first secondary display (e.g., Ads Display)
 @pragma('vm:entry-point')
-void screen1Main() {
+Future<void> screen1Main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const AdsApp());
 }
 
 // Entrypoint for second secondary display (e.g., Customer Display)
 @pragma('vm:entry-point')
-void screen2Main() {
+Future<void> screen2Main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const SecondaryApp());
+  runApp(const CustomerApp());
 }
 
-// Main App - Primary Display
+```
+> **Note**: The entrypoint names (`screen1Main`, `screen2Main`) above are exact and must match the `@pragma('vm:entry-point')` function names below. See [Important Notes](#important-notes) for details.
+
+**apps/main_app.dart:**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_multi_display_example/pages/main_app_pages/login_page.dart';
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Main Display',
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      home: const LoginPage(),
     );
   }
 }
 
-// Ads App - First Secondary Display
+```
+
+**apps/ads_app.dart:**
+> The Ads app is included as an entrypoint. The detailed ad page content is optional and omitted for brevity.
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_multi_display_example/pages/ads_app_pages/ads_page.dart';
+
 class AdsApp extends StatelessWidget {
   const AdsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      title: 'Ads Display',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'Advertisements Here',
-            style: TextStyle(fontSize: 48),
+      theme: ThemeData(primarySwatch: Colors.orange, useMaterial3: true),
+      home: const AdsPage(),
+    );
+  }
+}
+
+
+```
+
+**apps/customer_app.dart:**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_height_prompt_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_height_view_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_login_prompt_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_welcome_page.dart';
+import 'package:flutter_multi_display_example/state/app_state.dart';
+
+class CustomerApp extends StatefulWidget {
+  const CustomerApp({super.key});
+
+  @override
+  State<CustomerApp> createState() => _CustomerAppState();
+}
+
+class _CustomerAppState extends State<CustomerApp> {
+  final UserState _userState = UserState();
+  final HeightState _heightState = HeightState();
+
+  @override
+  void initState() {
+    super.initState();
+    _userState.addListener(_onStateChanged);
+    _heightState.addListener(_onStateChanged);
+  }
+
+  void _onStateChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _userState.removeListener(_onStateChanged);
+    _heightState.removeListener(_onStateChanged);
+    _userState.dispose();
+    _heightState.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Customer Display',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true),
+      home: _buildCurrentPage(),
+    );
+  }
+
+  Widget _buildCurrentPage() {
+    final userData = _userState.state;
+    final heightData = _heightState.state;
+
+    if (userData == null || userData.currentScreen == 'login') {
+      return const CustomerLoginPromptPage();
+    }
+
+    switch (userData.currentScreen) {
+      case 'home':
+        return CustomerWelcomePage(username: userData.username);
+      case 'height':
+        return const CustomerHeightPromptPage();
+      case 'height_view':
+        return CustomerHeightViewPage(
+          username: userData.username,
+          height: heightData?.height ?? 0.0,
+        );
+      default:
+        return const CustomerLoginPromptPage();
+    }
+  }
+}
+
+```
+
+### Shared State Management
+
+This example organizes SharedState usage into three clear steps so it's easy to replicate:
+
+**1. Create Shared State Classes:**
+
+**state/app_state.dart:**
+
+```dart
+import 'package:flutter_multi_display/flutter_multi_display.dart';
+
+// Shared state for user authentication
+class UserState extends SharedState<UserData> {
+  @override
+  UserData fromJson(Map<String, dynamic> json) => UserData.fromJson(json);
+
+  @override
+  Map<String, dynamic>? toJson(UserData? data) => data?.toJson();
+}
+
+class UserData {
+  final String username;
+  final String currentScreen; // 'login', 'home', 'height', 'height_view'
+
+  UserData({required this.username, this.currentScreen = 'login'});
+
+  factory UserData.fromJson(Map<String, dynamic> json) => UserData(
+        username: json['username'] as String? ?? '',
+        currentScreen: json['currentScreen'] as String? ?? 'login',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'username': username,
+        'currentScreen': currentScreen,
+      };
+
+  UserData copyWith({String? username, String? currentScreen}) => UserData(
+        username: username ?? this.username,
+        currentScreen: currentScreen ?? this.currentScreen,
+      );
+}
+
+// Shared state for height data
+class HeightState extends SharedState<HeightData> {
+  @override
+  HeightData fromJson(Map<String, dynamic> json) => HeightData.fromJson(json);
+
+  @override
+  Map<String, dynamic>? toJson(HeightData? data) => data?.toJson();
+}
+
+class HeightData {
+  final double height;
+  HeightData({required this.height});
+
+  factory HeightData.fromJson(Map<String, dynamic> json) =>
+      HeightData(height: (json['height'] as num?)?.toDouble() ?? 0.0);
+
+  Map<String, dynamic> toJson() => {'height': height};
+}
+
+```
+
+**2. Use shared state in the Main Display (login, home, height pages)**
+
+**pages/main_app_pages/login_page.dart:**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_multi_display_example/state/app_state.dart';
+import 'home_page.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final UserState _userState = UserState();
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear state when on login page
+    _userState.clear();
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _userState.dispose();
+    super.dispose();
+  }
+
+  void _login() {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a username')));
+      return;
+    }
+
+    // Update shared state with user info
+    _userState.sync(UserData(username: username, currentScreen: 'home'));
+
+    // Navigate to home page
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const HomePage()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login - Main Display'),
+        backgroundColor: Colors.blue,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.person, size: 100, color: Colors.blue),
+              const SizedBox(height: 40),
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.account_circle),
+                ),
+                onSubmitted: (_) => _login(),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _login,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text('Login', style: TextStyle(fontSize: 18)),
+              ),
+            ],
           ),
         ),
       ),
@@ -184,87 +434,14 @@ class AdsApp extends StatelessWidget {
   }
 }
 
-// Secondary App - Second Secondary Display
-class SecondaryApp extends StatelessWidget {
-  const SecondaryApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: CustomerDisplay(),
-    );
-  }
-}
 ```
 
-### Shared State Management
-
-**1. Create Shared State Classes:**
+**pages/main_app_pages/home_page.dart:**
 
 ```dart
-// shared_states.dart
-import 'package:flutter_multi_display/flutter_multi_display.dart';
-
-// Screen navigation state
-class CurrentScreenState extends SharedState<String> {
-  @override
-  String fromJson(Map<String, dynamic> json) {
-    return json['screen'] as String;
-  }
-
-  @override
-  Map<String, dynamic>? toJson(String? data) {
-    return data == null ? null : {'screen': data};
-  }
-}
-
-// Username state
-class UsernameState extends SharedState<String> {
-  @override
-  String fromJson(Map<String, dynamic> json) {
-    return json['username'] as String;
-  }
-
-  @override
-  Map<String, dynamic>? toJson(String? data) {
-    return data == null ? null : {'username': data};
-  }
-}
-
-// Height state
-class HeightState extends SharedState<double> {
-  @override
-  double fromJson(Map<String, dynamic> json) {
-    return (json['height'] as num).toDouble();
-  }
-
-  @override
-  Map<String, dynamic>? toJson(double? data) {
-    return data == null ? null : {'height': data};
-  }
-}
-
-// Weight state
-class WeightState extends SharedState<double> {
-  @override
-  double fromJson(Map<String, dynamic> json) {
-    return (json['weight'] as num).toDouble();
-  }
-
-  @override
-  Map<String, dynamic>? toJson(double? data) {
-    return data == null ? null : {'weight': data};
-  }
-}
-```
-
-**2. Use State in Main Display:**
-
-```dart
-// home_page.dart
 import 'package:flutter/material.dart';
-import 'shared_states.dart';
+import 'package:flutter_multi_display_example/state/app_state.dart';
+import 'height_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -274,193 +451,215 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _screenState = CurrentScreenState();
-  final _usernameState = UsernameState();
-  final _heightState = HeightState();
-  final _weightState = WeightState();
-  
-  final _usernameController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _weightController = TextEditingController();
+  final UserState _userState = UserState();
 
   @override
   void initState() {
     super.initState();
-    // Listen to state changes
-    _screenState.addListener(() => setState(() {}));
-    _usernameState.addListener(() => setState(() {}));
-    _heightState.addListener(() => setState(() {}));
-    _weightState.addListener(() => setState(() {}));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Main Display')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Username Input
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final username = _usernameController.text.trim();
-                if (username.isNotEmpty) {
-                  _usernameState.sync(username);
-                  _screenState.sync('home');
-                }
-              },
-              child: const Text('Login'),
-            ),
-            const SizedBox(height: 20),
-            
-            // Height Input
-            TextField(
-              controller: _heightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Height (cm)'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final height = double.tryParse(_heightController.text.trim());
-                if (height != null) {
-                  _heightState.sync(height);
-                  _screenState.sync('height');
-                }
-              },
-              child: const Text('Submit Height'),
-            ),
-            const SizedBox(height: 20),
-            
-            // Weight Input
-            TextField(
-              controller: _weightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Weight (kg)'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final weight = double.tryParse(_weightController.text.trim());
-                if (weight != null) {
-                  _weightState.sync(weight);
-                  _screenState.sync('weight');
-                }
-              },
-              child: const Text('Submit Weight'),
-            ),
-            const SizedBox(height: 20),
-            
-            // Logout
-            ElevatedButton(
-              onPressed: () {
-                _usernameState.clear();
-                _heightState.clear();
-                _weightState.clear();
-                _screenState.sync('login');
-              },
-              child: const Text('Logout'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _screenState.dispose();
-    _usernameState.dispose();
-    _heightState.dispose();
-    _weightState.dispose();
-    _usernameController.dispose();
-    _heightController.dispose();
-    _weightController.dispose();
-    super.dispose();
-  }
-}
-```
-
-**3. Use State in Secondary Display:**
-
-```dart
-// customer_display.dart
-import 'package:flutter/material.dart';
-import 'shared_states.dart';
-
-class CustomerDisplay extends StatefulWidget {
-  const CustomerDisplay({super.key});
-
-  @override
-  State<CustomerDisplay> createState() => _CustomerDisplayState();
-}
-
-class _CustomerDisplayState extends State<CustomerDisplay> {
-  final _screenState = CurrentScreenState();
-  final _usernameState = UsernameState();
-  final _heightState = HeightState();
-  final _weightState = WeightState();
-
-  @override
-  void initState() {
-    super.initState();
-    // Listen to state changes from main display
-    _screenState.addListener(() => setState(() {}));
-    _usernameState.addListener(() => setState(() {}));
-    _heightState.addListener(() => setState(() {}));
-    _weightState.addListener(() => setState(() {}));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screen = _screenState.value ?? 'login';
-    
-    return Scaffold(
-      body: Center(
-        child: _buildScreen(screen),
-      ),
-    );
-  }
-
-  Widget _buildScreen(String screen) {
-    switch (screen) {
-      case 'login':
-        return const Text(
-          'Please login on main display',
-          style: TextStyle(fontSize: 32),
-        );
-      case 'home':
-        return Text(
-          'Welcome, ${_usernameState.value ?? "Guest"}!',
-          style: const TextStyle(fontSize: 48),
-        );
-      case 'height':
-        return Text(
-          'Height: ${_heightState.value ?? "Not set"} cm',
-          style: const TextStyle(fontSize: 48),
-        );
-      case 'weight':
-        return Text(
-          'Weight: ${_weightState.value ?? "Not set"} kg',
-          style: const TextStyle(fontSize: 48),
-        );
-      default:
-        return const Text('Unknown screen');
+    // Ensure we're on home screen
+    final currentUser = _userState.state;
+    if (currentUser != null) {
+      _userState.sync(currentUser.copyWith(currentScreen: 'home'));
     }
   }
 
   @override
   void dispose() {
-    _screenState.dispose();
-    _usernameState.dispose();
-    _heightState.dispose();
-    _weightState.dispose();
+    _userState.dispose();
     super.dispose();
   }
+
+  void _logout() {
+    // Clear all state
+    _userState.clear();
+    final heightState = HeightState();
+    heightState.clear();
+    heightState.dispose();
+
+    // Pop to login page
+    Navigator.of(context).pop();
+  }
+
+  void _navigateToHeight() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const HeightPage()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final username = _userState.state?.username ?? 'User';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home - Main Display'),
+        backgroundColor: Colors.blue,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _logout,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.home, size: 100, color: Colors.blue),
+              const SizedBox(height: 24),
+              Text(
+                'Welcome, $username!',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 48),
+              ElevatedButton.icon(
+                onPressed: _navigateToHeight,
+                icon: const Icon(Icons.height),
+                label: const Text('Height'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 60),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+```
+
+**3. Use shared state in the Customer Display (customer-facing UI)**
+
+**pages/customer_app_pages/customer_login_prompt_page.dart**
+
+```dart
+import 'package:flutter/material.dart';
+
+class CustomerLoginPromptPage extends StatelessWidget {
+  const CustomerLoginPromptPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.green.shade50,
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          margin: const EdgeInsets.symmetric(horizontal: 60),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.login, size: 100, color: Colors.green.shade600),
+              const SizedBox(height: 32),
+              Text(
+                'Please enter username\non main display',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Customer Display',
+                style: TextStyle(fontSize: 18, color: Colors.green.shade600),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+```
+**pages/customer_app_pages/customer_welcome_page.dart**
+
+```dart
+import 'package:flutter/material.dart';
+
+class CustomerWelcomePage extends StatelessWidget {
+  final String username;
+
+  const CustomerWelcomePage({super.key, required this.username});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.green.shade50,
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          margin: const EdgeInsets.symmetric(horizontal: 60),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.waving_hand, size: 100, color: Colors.green.shade600),
+              const SizedBox(height: 32),
+              Text(
+                'Welcome!',
+                style: TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                username,
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Customer Display',
+                style: TextStyle(fontSize: 18, color: Colors.green.shade600),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 ```
 
 ## Important Notes
@@ -486,7 +685,7 @@ void screen1Main() {  // Must match exactly
 
 @pragma('vm:entry-point')
 void screen2Main() {  // Must match exactly
-  runApp(const SecondaryApp());
+  runApp(const CustomerApp());
 }
 ```
 

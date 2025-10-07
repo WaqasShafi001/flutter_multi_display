@@ -1,125 +1,131 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_multi_display_example/ads_app/ads_app.dart';
-import 'package:flutter_multi_display_example/main_app/state/data_cubit.dart';
-import 'package:flutter_multi_display_example/main_app/pages/home_page.dart';
-import 'package:flutter_multi_display_example/main_app/pages/login_page.dart';
-import 'package:flutter_multi_display_example/main_app/state/screen_cubit.dart';
-import 'package:flutter_multi_display_example/secondary_app/secondary_app.dart';
-import 'package:flutter_multi_display_example/secondary_app/state/viewer_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_multi_display_example/apps/main_app.dart';
+import 'package:flutter_multi_display_example/apps/customer_app.dart';
+import 'package:flutter_multi_display_example/apps/ads_app.dart';
+import 'package:flutter_multi_display_example/state/app_state.dart';
+import 'package:flutter_multi_display_example/pages/main_app_pages/login_page.dart';
+import 'package:flutter_multi_display_example/pages/main_app_pages/home_page.dart';
+import 'package:flutter_multi_display_example/pages/main_app_pages/height_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_login_prompt_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_welcome_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_height_prompt_page.dart';
+import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_height_view_page.dart';
+import 'package:flutter_multi_display_example/pages/ads_app_pages/ads_page.dart';
 
 void main() {
-  testWidgets('LoginPage displays login UI when app starts', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => ScreenCubit()),
-          BlocProvider(create: (_) => DataCubit()),
-        ],
-        child: const MaterialApp(home: LoginPage()),
-      ),
-    );
-
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Login'), findsWidgets);
-    expect(find.byType(ElevatedButton), findsOneWidget);
+  // Basic UI tests for main app flow
+  testWidgets('MainApp starts with LoginPage', (WidgetTester tester) async {
+    await tester.pumpWidget(const MainApp());
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.text('Login - Main Display'), findsOneWidget);
   });
 
-  testWidgets('LoginPage navigates to HomePage after successful login', (
+  testWidgets('LoginPage navigates to HomePage after valid username', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => ScreenCubit()),
-          BlocProvider(create: (_) => DataCubit()),
-        ],
-        child: const MaterialApp(home: LoginPage()),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
-    await tester.enterText(find.byType(TextField), 'testuser');
+    await tester.enterText(find.byType(TextField), 'Waqas');
     await tester.tap(find.byType(ElevatedButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Height Page'), findsOneWidget);
-    expect(find.text('Weight Page'), findsOneWidget);
-    expect(find.byType(ElevatedButton), findsNWidgets(2));
-    expect(find.text('Login'), findsNothing);
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(find.textContaining('Welcome, Waqas'), findsOneWidget);
   });
 
-  testWidgets('HomePage logout navigates back to LoginPage', (
-    WidgetTester tester,
-  ) async {
-    final screenCubit = ScreenCubit();
-    final dataCubit = DataCubit();
-    screenCubit.setScreen('home');
-    dataCubit.setUsername('testuser');
+  testWidgets('HomePage navigates to HeightPage', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomePage()));
+    expect(find.byType(HomePage), findsOneWidget);
 
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => screenCubit),
-          BlocProvider(create: (_) => dataCubit),
-        ],
-        child: const MaterialApp(home: HomePage()),
-      ),
-    );
-
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.byIcon(Icons.logout), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.logout));
+    await tester.tap(find.byIcon(Icons.height));
     await tester.pumpAndSettle();
 
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Home'), findsNothing);
+    expect(find.byType(HeightPage), findsOneWidget);
+    expect(find.text('Enter Height - Main Display'), findsOneWidget);
   });
 
-  testWidgets('SecondaryApp displays InfoPage initially', (
+  testWidgets('HeightPage shows error when height is invalid', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      BlocProvider(create: (_) => ViewerCubit(), child: const SecondaryApp()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: HeightPage()));
 
-    expect(find.text('Please enter username on main display'), findsOneWidget);
+    await tester.tap(find.byType(ElevatedButton));
+    await tester.pump();
+
+    expect(find.text('Please enter your height'), findsOneWidget);
   });
 
-  testWidgets('SecondaryApp displays WelcomePage after login', (
+  testWidgets('HeightPage accepts valid height input', (
     WidgetTester tester,
   ) async {
-    final screenCubit = ScreenCubit();
-    final dataCubit = DataCubit();
-    screenCubit.setScreen('home');
-    dataCubit.setUsername('testuser');
+    await tester.pumpWidget(const MaterialApp(home: HeightPage()));
 
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => screenCubit),
-          BlocProvider(create: (_) => dataCubit),
-          BlocProvider(create: (_) => ViewerCubit()),
-        ],
-        child: const SecondaryApp(),
-      ),
-    );
+    await tester.enterText(find.byType(TextField), '180');
+    await tester.tap(find.byType(ElevatedButton));
+    await tester.pump();
 
+    // Confirm no invalid height message
+    expect(find.text('Please enter a valid height'), findsNothing);
+  });
+
+  // -------- CustomerApp Tests --------
+  testWidgets('CustomerApp shows login prompt when no user state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CustomerApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome to the system'), findsOneWidget);
-    expect(find.text('Please enter username on main display'), findsNothing);
+    expect(find.byType(CustomerLoginPromptPage), findsOneWidget);
+    expect(find.textContaining('Please enter username'), findsOneWidget);
   });
 
+  testWidgets('CustomerApp shows welcome screen when user is home', (
+    WidgetTester tester,
+  ) async {
+    final userState = UserState();
+    userState.sync(UserData(username: 'Waqas', currentScreen: 'home'));
+
+    await tester.pumpWidget(const CustomerApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CustomerWelcomePage), findsOneWidget);
+    expect(find.text('Waqas'), findsOneWidget);
+  });
+
+  testWidgets('CustomerApp shows height prompt when user is on height screen', (
+    WidgetTester tester,
+  ) async {
+    final userState = UserState();
+    userState.sync(UserData(username: 'Waqas', currentScreen: 'height'));
+
+    await tester.pumpWidget(const CustomerApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CustomerHeightPromptPage), findsOneWidget);
+  });
+
+  testWidgets(
+    'CustomerApp shows height view when user is on height_view screen',
+    (WidgetTester tester) async {
+      final userState = UserState();
+      final heightState = HeightState();
+
+      userState.sync(UserData(username: 'Waqas', currentScreen: 'height_view'));
+      heightState.sync(HeightData(height: 175.0));
+
+      await tester.pumpWidget(const CustomerApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CustomerHeightViewPage), findsOneWidget);
+      expect(find.textContaining('175.0 cm'), findsOneWidget);
+    },
+  );
+
+  // -------- AdsApp Tests --------
   testWidgets('AdsApp displays AdsPage', (WidgetTester tester) async {
     await tester.pumpWidget(const AdsApp());
-
-    expect(find.text('Ads Here'), findsOneWidget);
+    expect(find.byType(AdsPage), findsOneWidget);
+    expect(find.text('ADVERTISEMENT'), findsOneWidget);
   });
 }
