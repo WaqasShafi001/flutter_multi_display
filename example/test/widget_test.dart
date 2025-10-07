@@ -14,7 +14,7 @@ import 'package:flutter_multi_display_example/pages/customer_app_pages/customer_
 import 'package:flutter_multi_display_example/pages/ads_app_pages/ads_page.dart';
 
 void main() {
-  // Basic UI tests for main app flow
+  // -------- MainApp Tests --------
   testWidgets('MainApp starts with LoginPage', (WidgetTester tester) async {
     await tester.pumpWidget(const MainApp());
     expect(find.byType(LoginPage), findsOneWidget);
@@ -31,7 +31,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomePage), findsOneWidget);
-    expect(find.textContaining('Welcome, Waqas'), findsOneWidget);
+    // Actual text in HomePage has an exclamation mark
+    expect(find.textContaining('Welcome, Waqas!'), findsOneWidget);
   });
 
   testWidgets('HomePage navigates to HeightPage', (WidgetTester tester) async {
@@ -65,7 +66,6 @@ void main() {
     await tester.tap(find.byType(ElevatedButton));
     await tester.pump();
 
-    // Confirm no invalid height message
     expect(find.text('Please enter a valid height'), findsNothing);
   });
 
@@ -84,9 +84,10 @@ void main() {
     WidgetTester tester,
   ) async {
     final userState = UserState();
-    userState.sync(UserData(username: 'Waqas', currentScreen: 'home'));
-
+    // Sync state after widget is built to simulate live update
     await tester.pumpWidget(const CustomerApp());
+    await tester.pump();
+    userState.sync(UserData(username: 'Waqas', currentScreen: 'home'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CustomerWelcomePage), findsOneWidget);
@@ -97,9 +98,9 @@ void main() {
     WidgetTester tester,
   ) async {
     final userState = UserState();
-    userState.sync(UserData(username: 'Waqas', currentScreen: 'height'));
-
     await tester.pumpWidget(const CustomerApp());
+    await tester.pump();
+    userState.sync(UserData(username: 'Waqas', currentScreen: 'height'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CustomerHeightPromptPage), findsOneWidget);
@@ -111,10 +112,12 @@ void main() {
       final userState = UserState();
       final heightState = HeightState();
 
+      await tester.pumpWidget(const CustomerApp());
+      await tester.pump();
+
       userState.sync(UserData(username: 'Waqas', currentScreen: 'height_view'));
       heightState.sync(HeightData(height: 175.0));
 
-      await tester.pumpWidget(const CustomerApp());
       await tester.pumpAndSettle();
 
       expect(find.byType(CustomerHeightViewPage), findsOneWidget);
